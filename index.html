@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width= device-width, initial-scale=1.0">
+        <title> Contacts</title>
+        <link rel="stylesheet" href="materialize\css\materialize.css">
+    </head>
+    <body>
+        <div class="container">
+            <div class="header center">
+                <img src="images\depositphotos_226405696-stock-photo-businessman-blurred-background-using-thin.jpg"  width=400px alt="Contacts">
+                <h4>CONTACTS</h4>
+</div>
+                <br>
+
+                <form id="Details"><fieldset>
+                    <input type="hidden" id="hiddenId"/>
+
+                    <div class="input-field">
+                        <label for="Name"> NAME</label>
+                        <input type="text" id="Name"/>
+
+                    </div>
+
+                    <div class="input-field">
+                        <label for="Number">Number</label>
+                        <input type="number" id="Number">
+                    </div>
+
+                    <div class="input-field">
+                        <label for="Email">Email</label>
+                        <input type="email" id="Email">
+                    </div>
+                    
+                    <div class="file-field input-field">
+                        <div class="btn">
+                            <span>Upload Image</span>
+                            <input type="file" id="Image" accept="image/*">
+                        </div>
+                        <div class="file-path-wrapper">
+                            <input class="file-path validate" type="text">
+                        </div>
+                        <input type="text" id="ImageURL" readonly style="margin-top: 10px;" placeholder="Current Image URL">
+                    </div>
+                </fieldset>
+                    <br>
+                    <button class="waves-effect waves-light btn" type="submit">ADD/UPDATE</button>
+                    <br><br>
+                </form>
+                <br><br><br>
+                <div id="loader" class="loader"></div>
+                <fieldset><div style="margin: auto; display: block;">
+                    <ul id="show"></ul>
+                </div></fieldset>
+                
+            </div>
+        
+
+            <style>
+                .loader {
+                    border: 4px solid rgba(0, 0, 0, 0.3);
+                    border-radius: 50%;
+                    border-top: 4px solid #3498db;
+                    width: 30px;
+                    height: 30px;
+                    animation: spin 1s linear infinite;
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    display: none;
+                }
+            
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        
+        <script src="materialize\js\materialize.js"></script>
+        <script type="module">
+            
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+            import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+            import {  getDatabase, ref, set, onChildAdded, serverTimestamp,remove } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+            import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
+            
+            const firebaseConfig = {
+              apiKey: "AIzaSyBVebw9szX_YsxNWwK3g38sDYT_WqsJi1s",
+              authDomain: "contacts-16a80.firebaseapp.com",
+              projectId: "contacts-16a80",
+              storageBucket: "contacts-16a80.appspot.com",
+              messagingSenderId: "377069148632",
+              appId: "1:377069148632:web:e2612ac6b7940324957aad",
+              measurementId: "G-JVMC4NCZE2",
+              databaseURL: "https://contacts-16a80-default-rtdb.firebaseio.com/"
+              
+            };
+          
+            
+            const app = initializeApp(firebaseConfig);
+            const analytics = getAnalytics(app);
+
+            function showLoader() {
+    const loader = document.getElementById('loader');
+    loader.style.display = 'block';
+}
+
+
+function hideLoader() {
+    const loader = document.getElementById('loader');
+    loader.style.display = 'none';
+}
+
+            
+
+            var db=getDatabase();
+            const storage = getStorage(app);
+
+            var show=document.getElementById("show");
+            const showRef = ref(db, 'show');
+            document.getElementById('Details').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const Name = document.getElementById('Name').value.trim();
+    const Number = document.getElementById('Number').value.trim();
+    const Email = document.getElementById('Email').value.trim();
+    const Image = document.getElementById('Image').files[0];
+    const id = document.getElementById('hiddenId').value || Date.now().toString();
+    const ImageURL = document.getElementById('ImageURL').value;
+
+   
+    if (!Name || !Number || !Email || !Image) {
+        alert("Please fill in all fields.");
+        return;
+    }
+    showLoader();
+    let imageUrl = ImageURL; 
+    if (Image) {
+        const imageRef = storageRef(storage, 'images/' + id);
+        try {
+            await uploadBytes(imageRef, Image);
+            imageUrl = await getDownloadURL(imageRef);
+        } catch (error) {
+            console.error("Error uploading image:", error);
+            hideLoader();
+            return;
+        }
+    }
+
+    try {
+        
+        await set(ref(db, 'show/' + id), {
+            Name: Name,
+            Number: Number,
+            Email: Email,
+            Image: imageUrl,
+            createdAt: serverTimestamp()
+        });
+
+        
+        document.getElementById('Details').reset();
+    } catch (error) {
+        console.error("Error saving contact details:", error);
+        alert("Failed to save contact. Please try again.");
+    }
+    finally {
+        hideLoader();
+    }
+});
+
+            
+//             
+onChildAdded(showRef, (data) => {
+    var li = document.createElement("li");
+    li.id = data.key;
+    li.innerHTML = showTemplate(data.val());
+    show.appendChild(li);
+});
+
+show.addEventListener("click", (e) => {
+    updateShow(e);
+    deleteShow(e);
+});
+
+function deleteShow(e){
+    const target = e.target;
+    if (target.classList.contains("delete")){
+        const listItem = target.closest('li'); 
+                const id = listItem.id;
+
+                
+                remove(ref(db, 'show/' + id));
+
+                
+                listItem.remove();
+        
+    }
+    
+}
+function updateShow(e) {
+    const target = e.target;
+    if (target.classList.contains("edit")) {
+        const listItem = target.closest('li'); 
+
+       
+        const name = listItem.querySelector(".Name strong").innerText;
+        const number = listItem.querySelector(".Number strong").innerText;
+        const email = listItem.querySelector(".Email strong").innerText;
+        const imageUrl = listItem.querySelector("img").src; 
+        const id = listItem.id;
+
+        
+        document.getElementById('Name').value = name;
+        document.getElementById('Number').value = number;
+        document.getElementById('Email').value = email;
+        document.getElementById('ImageURL').value = imageUrl; 
+        document.getElementById('hiddenId').value = id;
+    }
+}
+
+
+function showTemplate({ Name, Email, Number, Image, createdAt }) {
+    var createdAtFormatted = new Date(createdAt);
+    return `
+       <div style="margin-left:300px;display:inline"> 
+        <div>
+            <label>Name:</label>
+            <label class="Name"><strong>${Name}</strong></label>
+        </div>
+        <div>
+            <label>Number:</label>
+            <label class="Number"><strong>${Number}</strong></label>
+        </div>
+        <div>
+            <label>Email:</label>
+            <label class="Email"><strong>${Email}</strong></label>
+        </div></div>
+        <div>
+            <img src="${Image}" alt="Contact Image" style="max-width: 100px; max-height: 100px ; border-radius: 50px">
+        </div>
+        
+        <button class="waves-effect waves-light btn delete">Delete</button>
+        <button class="waves-effect waves-light btn edit">Update</button>
+        <br><br><br>
+    `;
+}
+
+
+          </script>
+         
+
+        
+          
+    </body>
+</html>
