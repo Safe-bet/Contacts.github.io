@@ -106,7 +106,8 @@
             const db=getDatabase();
             const storage = getStorage(app);
             var show=document.getElementById("show");
-            const showRef = ref(db, 'show');
+            const showRef = ref(db, 'show/');
+            
 
             function showLoader() {
                 const loader = document.getElementById('loader');
@@ -121,7 +122,38 @@
 
             
 
-            
+            onChildAdded(showRef, (data) => {
+                var li = document.createElement("li");
+                li.id = data.key;
+                li.innerHTML = showTemplate(data.val());
+                show.appendChild(li);
+            });
+
+            function showTemplate({ Name, Email, Number, Image, createdAt }) {
+                var createdAtFormatted = new Date(createdAt);
+                return `
+                <div style="margin-left:300px;display:inline"> 
+                    <div>
+                        <label>Name:</label>
+                        <label class="Name"><strong>${Name}</strong></label>
+                    </div>
+                    <div>
+                        <label>Number:</label>
+                        <label class="Number"><strong>${Number}</strong></label>
+                    </div>
+                    <div>
+                        <label>Email:</label>
+                        <label class="Email"><strong>${Email}</strong></label>
+                    </div></div>
+                    <div>
+                        <img src="${Image}" alt="Contact Image" style="max-width: 100px; max-height: 100px ; border-radius: 50%">
+                    </div>
+                    
+                    <button class="waves-effect waves-light btn delete">Delete</button>
+                    <button class="waves-effect waves-light btn edit">Update</button>
+                    <br><br><br>
+                `;
+            }
 
             
             document.getElementById('Details').addEventListener('submit', async (e) => {
@@ -173,41 +205,6 @@
                     hideLoader();
                 }
             });
-
-            
-           
-            onChildAdded(showRef, (data) => {
-                var li = document.createElement("li");
-                li.id = data.key;
-                li.innerHTML = showTemplate(data.val());
-                show.appendChild(li);
-            });
-
-            function showTemplate({ Name, Email, Number, Image, createdAt }) {
-                var createdAtFormatted = new Date(createdAt);
-                return `
-                <div style="margin-left:300px;display:inline"> 
-                    <div>
-                        <label>Name:</label>
-                        <label class="Name"><strong>${Name}</strong></label>
-                    </div>
-                    <div>
-                        <label>Number:</label>
-                        <label class="Number"><strong>${Number}</strong></label>
-                    </div>
-                    <div>
-                        <label>Email:</label>
-                        <label class="Email"><strong>${Email}</strong></label>
-                    </div></div>
-                    <div>
-                        <img src="${Image}" alt="Contact Image" style="max-width: 100px; max-height: 100px ; border-radius: 50px">
-                    </div>
-                    
-                    <button class="waves-effect waves-light btn delete">Delete</button>
-                    <button class="waves-effect waves-light btn edit">Update</button>
-                    <br><br><br>
-                `;
-            }
 
             show.addEventListener("click", (e) => {
                 updateShow(e);
