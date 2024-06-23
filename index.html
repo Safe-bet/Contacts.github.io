@@ -157,6 +157,7 @@
 
             
             document.getElementById('Details').addEventListener('submit', async (e) => {
+                e.preventDefault();
                 const Name = document.getElementById('Name').value.trim();
                 const Number = document.getElementById('Number').value.trim();
                 const Email = document.getElementById('Email').value.trim();
